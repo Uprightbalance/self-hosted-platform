@@ -16,8 +16,8 @@ module "security_groups" {
   my_ip  = var.my_ip
 }
 
-module "ec2" {
-  source            = "../../modules/ec2"
+module "compute" {
+  source            = "../../modules/compute"
   public_subnet_id  = module.networking.public_subnet_id
   private_subnet_id = module.networking.private_subnet_id
   bastion_sg_id     = module.security_groups.bastion_sg_id
