@@ -1,7 +1,16 @@
+# -------------------------
+# SSH Key Pair
+# -------------------------
+
 resource "aws_key_pair" "devops_key" {
   key_name   = "devops-key"
   public_key = var.public_key
 }
+
+
+# -------------------------
+# Ubuntu AMI
+# -------------------------
 
 data "aws_ami" "ubuntu" {
   most_recent = true
@@ -17,7 +26,13 @@ data "aws_ami" "ubuntu" {
     name   = "virtualization-type"
     values = ["hvm"]
   }
+
+  filter {
+    name   = "root-device-type"
+    values = ["ebs"]
+  }
 }
+
 
 # -------------------------
 # Bastion Host
@@ -34,6 +49,7 @@ resource "aws_instance" "bastion" {
   root_block_device {
     volume_size = 10
     volume_type = "gp3"
+    encrypted   = true
   }
 
   tags = {
@@ -41,6 +57,7 @@ resource "aws_instance" "bastion" {
     Role = "bastion"
   }
 }
+
 
 # -------------------------
 # Kubernetes Control Plane
@@ -56,6 +73,7 @@ resource "aws_instance" "control_plane" {
   root_block_device {
     volume_size = 30
     volume_type = "gp3"
+    encrypted   = true
   }
 
   tags = {
@@ -64,8 +82,9 @@ resource "aws_instance" "control_plane" {
   }
 }
 
+
 # -------------------------
-# Worker Node 1
+# Kubernetes Worker 1
 # -------------------------
 
 resource "aws_instance" "worker1" {
@@ -78,12 +97,37 @@ resource "aws_instance" "worker1" {
   root_block_device {
     volume_size = 30
     volume_type = "gp3"
+    encrypted   = true
   }
 
   tags = {
-    Name = "worker1"
-    Role = "k8s-worker"
-    Environment = "dev-staging-prod"
+    Name        = "worker1"
+    Role        = "k8s-worker"
+    Environment = "dev"
   }
 }
 
+
+# -------------------------
+# Kubernetes Worker 2
+# -------------------------
+
+resource "aws_instance" "worker2" {
+  ami                    = data.aws_ami.ubuntu.id
+  instance_type          = "t3.small"
+  subnet_id              = var.private_subnet_id
+  vpc_security_group_ids = [var.k8s_sg_id]
+  key_name               = aws_key_pair.devops_key.key_name
+
+  root_block_device {
+    volume_size = 30
+    volume_type = "gp3"
+    encrypted   = true
+  }
+
+  tags = {
+    Name        = "worker2"
+    Role        = "k8s-worker"
+    Environment = "dev"
+  }
+}
