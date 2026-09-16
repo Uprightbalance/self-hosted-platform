@@ -10,3 +10,7 @@ output "worker1_private_ip" {
   value = aws_instance.worker1.private_ip
 }
 
+output "worker2_private_ip" {
+  value = aws_instance.worker2.private_ip
+}
+

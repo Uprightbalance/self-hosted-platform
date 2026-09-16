@@ -28,3 +28,8 @@ output "worker1_private_ip" {
   value       = module.compute.worker1_private_ip
 }
 
+output "worker2_private_ip" {
+  description = "Private IP of worker node"
+  value       = module.compute.worker2_private_ip
+}
+
