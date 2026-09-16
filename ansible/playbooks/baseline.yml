@@ -1,0 +1,16 @@
+---
+- name: Baseline configuration for Kubernetes nodes
+  hosts: k8s
+  become: true
+
+  tasks:
+    - name: Install baseline packages
+      ansible.builtin.apt:
+        name:
+          - curl
+          - ca-certificates
+          - gnupg
+          - apt-transport-https
+        state: present
+        update_cache: true
+        cache_valid_time: 3600
