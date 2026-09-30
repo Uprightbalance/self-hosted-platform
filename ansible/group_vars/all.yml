@@ -1,0 +1,79 @@
+---
+# =====================================================================
+# Self-hosted GitOps platform — global variables
+# Source of truth for all roles in this playbook.
+# =====================================================================
+
+# ---------- Node addressing (matches Terraform outputs) ----------
+bastion_public_ip: "18.214.39.1"
+bastion_private_ip: "10.0.1.173"
+
+control_plane_private_ip: "10.0.2.41"
+worker1_private_ip: "10.0.2.83"
+worker2_private_ip: "10.0.2.238"
+
+# ---------- Artifact distribution ----------
+# The bastion serves the bundle over HTTP (Pattern C) so each private
+# node pulls only what it needs, and only ~616 MB travels the wire total.
+artifact_base_url: "http://{{ bastion_private_ip }}:8080"
+artifact_debs_url: "{{ artifact_base_url }}/debs"
+artifact_images_url: "{{ artifact_base_url }}/images"
+
+# Local staging area on each node where downloaded artifacts land.
+node_staging_dir: "/opt/k8s-bootstrap"
+
+# ---------- Kubernetes ----------
+k8s_version: "1.37.0"
+k8s_minor: "1.37"
+pod_network_cidr: "192.168.0.0/16"
+service_cidr: "10.96.0.0/12"
+apiserver_advertise_address: "{{ control_plane_private_ip }}"
+
+# The kubeadm-reported pause image for v1.37.0.
+# containerd 2.x sets this under:
+#   [plugins.'io.containerd.cri.v1.images'.pinned_images]
+#     sandbox = 'registry.k8s.io/pause:3.10.2'
+containerd_sandbox_image: "registry.k8s.io/pause:3.10.2"
+
+# The full image set that kubeadm expects for v1.37.0.
+k8s_system_images:
+  - "registry.k8s.io/kube-apiserver:v{{ k8s_version }}"
+  - "registry.k8s.io/kube-controller-manager:v{{ k8s_version }}"
+  - "registry.k8s.io/kube-scheduler:v{{ k8s_version }}"
+  - "registry.k8s.io/kube-proxy:v{{ k8s_version }}"
+  - "registry.k8s.io/coredns/coredns:v1.14.6"
+  - "registry.k8s.io/pause:3.10.2"
+  - "registry.k8s.io/etcd:3.7.0-0"
+
+# ---------- containerd ----------
+containerd_deb: "containerd_2.2.1-0ubuntu1~22.04.2_amd64.deb"
+runc_deb: "runc_1.3.4-0ubuntu1~22.04.1_amd64.deb"
+containerd_version: "2.2.1"
+containerd_config_path: "/etc/containerd/config.toml"
+
+# ---------- Kubernetes packages ----------
+kubeadm_deb: "kubeadm_{{ k8s_version }}-1.1_amd64.deb"
+kubelet_deb: "kubelet_{{ k8s_version }}-1.1_amd64.deb"
+kubectl_deb: "kubectl_{{ k8s_version }}-1.1_amd64.deb"
+kubernetes_cni_deb: "kubernetes-cni_1.9.1-1.1_amd64.deb"
+
+# Helper packages that are usually present on stock Ubuntu but worth
+# ensuring via the offline bundle.
+helper_debs:
+  - "conntrack_1%3a1.4.6-2build2_amd64.deb"
+  - "socat_1.7.4.1-3ubuntu4_amd64.deb"
+  - "ebtables_2.0.11-4build2_amd64.deb"
+  - "ipset_7.15-1build1_amd64.deb"
+
+# ---------- Calico ----------
+calico_version: "v3.32.2"
+tigera_operator_version: "v1.42.6"
+calico_encapsulation: "VXLANCrossSubnet"
+calico_block_size: "26"
+
+# ---------- Cluster naming ----------
+cluster_name: "self-hosted-platform"
+
+# ---------- Container image tars ----------
+k8s_images_tar: "k8s-system-images.tar"
+calico_images_tar: "calico-images.tar"

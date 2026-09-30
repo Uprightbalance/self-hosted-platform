@@ -1,0 +1,94 @@
+---
+- name: Ensure module-load configuration directory exists
+  ansible.builtin.file:
+    path: /etc/modules-load.d
+    state: directory
+    mode: "0755"
+
+- name: Load required kernel modules at boot
+  ansible.builtin.copy:
+    dest: /etc/modules-load.d/k8s.conf
+    mode: "0644"
+    content: |
+      {% for m in kernel_modules %}
+      {{ m }}
+      {% endfor %}
+
+- name: Load required kernel modules now
+  community.general.modprobe:
+    name: "{{ item }}"
+    state: present
+  loop: "{{ kernel_modules }}"
+
+- name: Ensure sysctl configuration directory exists
+  ansible.builtin.file:
+    path: /etc/sysctl.d
+    state: directory
+    mode: "0755"
+
+- name: Configure Kubernetes sysctl settings
+  ansible.builtin.copy:
+    dest: /etc/sysctl.d/99-kubernetes-cri.conf
+    mode: "0644"
+    content: |
+      {% for k, v in sysctl_settings.items() %}
+      {{ k }} = {{ v }}
+      {% endfor %}
+
+- name: Apply sysctl settings
+  ansible.builtin.command:
+    cmd: sysctl --system
+  changed_when: false
+
+- name: Disable swap immediately
+  ansible.builtin.command:
+    cmd: swapoff -a
+  when: ansible_facts["swaptotal_mb"] | int > 0
+  changed_when: false
+
+- name: Remove swap entries from /etc/fstab
+  ansible.builtin.replace:
+    path: /etc/fstab
+    regexp: '^([^#].*\s+swap\s+.*)$'
+    replace: '# \1'
+
+- name: Ensure staging directory exists on node
+  ansible.builtin.file:
+    path: "{{ node_staging_dir }}"
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+
+- name: Query /proc/modules for loaded modules
+  ansible.builtin.shell:
+    cmd: "cut -d' ' -f1 /proc/modules"
+  register: loaded_modules
+  changed_when: false
+
+- name: Fail if any required kernel module is missing
+  ansible.builtin.fail:
+    msg: "Required kernel module '{{ item }}' is not loaded"
+  when: item not in loaded_modules.stdout_lines
+  loop: "{{ kernel_modules }}"
+
+- name: Report sysctl values in effect
+  ansible.builtin.command:
+    cmd: "sysctl net.ipv4.ip_forward net.bridge.bridge-nf-call-iptables net.bridge.bridge-nf-call-ip6tables"
+  register: sysctl_check
+  changed_when: false
+
+- name: Show sysctl values
+  ansible.builtin.debug:
+    var: sysctl_check.stdout_lines
+
+- name: Report swap state
+  ansible.builtin.command:
+    cmd: "swapon --show"
+  register: swap_check
+  changed_when: false
+  failed_when: false
+
+- name: Show swap state (should be empty)
+  ansible.builtin.debug:
+    var: swap_check.stdout_lines

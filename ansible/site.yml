@@ -1,0 +1,54 @@
+---
+# =====================================================================
+# Self-hosted GitOps platform
+# Top-level orchestration playbook.
+#
+# Usage:
+#   ansible-playbook site.yml                     # full build
+#   ansible-playbook site.yml --tags base         # one stage only
+#   ansible-playbook site.yml --limit control-plane
+# =====================================================================
+
+- name: Base OS preparation for all Kubernetes nodes
+  hosts: k8s
+  become: true
+  tags: [base]
+  roles:
+    - base
+
+# Placeholder roles, populated in subsequent steps:
+#
+# - name: containerd on all Kubernetes nodes
+#   hosts: k8s
+#   become: true
+#   tags: [containerd]
+#   roles:
+#     - containerd
+#
+# - name: Kubernetes packages on all Kubernetes nodes
+#   hosts: k8s
+#   become: true
+#   tags: [kubernetes]
+#   roles:
+#     - kubernetes
+#
+# - name: Initialize the control plane
+#   hosts: k8s_control_plane
+#   become: true
+#   tags: [control-plane]
+#   roles:
+#     - control-plane
+#
+# - name: Join workers to the cluster
+#   hosts: k8s_workers
+#   become: true
+#   tags: [join]
+#   roles:
+#     - join
+#
+# - name: Install Calico CNI
+#   hosts: k8s_control_plane
+#   become: true
+#   tags: [calico]
+#   roles:
+#     - calico

@@ -1,0 +1,12 @@
+# Populated at runtime from the bastion artifact server
+files/debs/*.deb
+files/images/*.tar
+
+# Ansible/Vault artifacts
+*.retry
+*.log
+
+# Editors
+.vscode/
+.idea/
+*.swp
