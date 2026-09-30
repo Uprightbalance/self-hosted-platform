@@ -21,6 +21,8 @@ artifact_images_url: "{{ artifact_base_url }}/images"
 
 # Local staging area on each node where downloaded artifacts land.
 node_staging_dir: "/opt/k8s-bootstrap"
+node_debs_dir: "{{ node_staging_dir }}/debs"
+node_images_dir: "{{ node_staging_dir }}/images"
 
 # ---------- Kubernetes ----------
 k8s_version: "1.37.0"

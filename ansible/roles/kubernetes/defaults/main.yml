@@ -1,0 +1,29 @@
+---
+# Kubernetes package versions
+kube_package_version: "1.37.0-1.1"
+
+# Debian package filenames (must match what's in the bastion bundle)
+kubeadm_deb_file: "kubeadm_{{ k8s_version }}-1.1_amd64.deb"
+kubelet_deb_file: "kubelet_{{ k8s_version }}-1.1_amd64.deb"
+kubectl_deb_file: "kubectl_{{ k8s_version }}-1.1_amd64.deb"
+kubernetes_cni_deb_file: "kubernetes-cni_1.9.1-1.1_amd64.deb"
+
+# Helper packages required by kubelet at runtime
+helper_deb_files:
+  - "conntrack_1.4.6-2build2_amd64.deb"
+  - "socat_1.7.4.1-3ubuntu4_amd64.deb"
+  - "ebtables_2.0.11-4build2_amd64.deb"
+  - "ipset_7.15-1build1_amd64.deb"
+
+# Kubernetes packages to hold after installation so unattended
+# upgrades can never silently change versions.
+kube_held_packages:
+  - kubeadm
+  - kubelet
+  - kubectl
+  - kubernetes-cni
+  - containerd
+  - runc
+
+# Where images are staged on the node
+k8s_images_dir: "{{ node_images_dir }}"

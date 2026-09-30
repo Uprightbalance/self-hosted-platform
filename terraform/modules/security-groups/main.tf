@@ -80,3 +80,27 @@ resource "aws_security_group" "k8s_sg" {
     Role = "kubernetes"
   }
 }
+
+
+# -------------------------
+# Standalone rule: allow k8s nodes to reach bastion on 8080 (artifact server)
+# -------------------------
+# Declared as a standalone aws_security_group_rule rather than an inline
+# ingress block on bastion_sg, because:
+#
+#   bastion_sg has no inline references to k8s_sg,
+#   but k8s_sg already references bastion_sg in its SSH and API ingress rules.
+#
+# Adding an inline reference from bastion_sg -> k8s_sg would create a
+# dependency cycle. Using a standalone rule breaks the cycle while still
+# achieving the same network policy.
+
+resource "aws_security_group_rule" "bastion_artifact_ingress" {
+  type                     = "ingress"
+  description              = "Artifact distribution for k8s nodes"
+  from_port                = 8080
+  to_port                  = 8080
+  protocol                 = "tcp"
+  security_group_id        = aws_security_group.bastion_sg.id
+  source_security_group_id = aws_security_group.k8s_sg.id
+}
