@@ -1,0 +1,112 @@
+---
+# =====================================================================
+# Install and configure containerd 2.x for Kubernetes.
+#
+# Key facts (learned from earlier builds):
+#   - .debs must come from the bastion; the nodes have no internet.
+#   - dpkg -i, not apt install.
+#   - containerd 2.x uses 'sandbox' under
+#       [plugins.'io.containerd.cri.v1.images'.pinned_images]
+#     NOT 'sandbox_image' under the old grpc.v1.cri plugin.
+#   - The default pause image is 3.10.1; Kubernetes 1.37 wants 3.10.2.
+#   - SystemdCgroup must be true to match kubelet.
+# =====================================================================
+
+- name: Ensure staging .deb directory exists
+  ansible.builtin.file:
+    path: "{{ containerd_deb_dir }}"
+    state: directory
+    mode: "0755"
+
+- name: Download runc .deb from the bastion artifact server
+  ansible.builtin.get_url:
+    url: "{{ artifact_debs_url }}/{{ runc_deb_file }}"
+    dest: "{{ containerd_deb_dir }}/{{ runc_deb_file }}"
+    mode: "0644"
+    force: false
+
+- name: Download containerd .deb from the bastion artifact server
+  ansible.builtin.get_url:
+    url: "{{ artifact_debs_url }}/{{ containerd_deb_file }}"
+    dest: "{{ containerd_deb_dir }}/{{ containerd_deb_file }}"
+    mode: "0644"
+    force: false
+
+- name: Check whether containerd is already installed
+  ansible.builtin.command:
+    cmd: dpkg-query -W -f='${Status}' containerd
+  register: containerd_installed
+  changed_when: false
+  failed_when: false
+
+- name: Install runc from local .deb
+  ansible.builtin.command:
+    cmd: "dpkg -i {{ containerd_deb_dir }}/{{ runc_deb_file }}"
+  when: "'install ok installed' not in containerd_installed.stdout"
+  register: runc_install
+  changed_when: runc_install.rc == 0
+
+- name: Install containerd from local .deb
+  ansible.builtin.command:
+    cmd: "dpkg -i {{ containerd_deb_dir }}/{{ containerd_deb_file }}"
+  when: "'install ok installed' not in containerd_installed.stdout"
+  register: containerd_install
+  changed_when: containerd_install.rc == 0
+
+- name: Ensure /etc/containerd exists
+  ansible.builtin.file:
+    path: /etc/containerd
+    state: directory
+    mode: "0755"
+
+- name: Generate default containerd config (only if missing)
+  ansible.builtin.shell:
+    cmd: "containerd config default > {{ containerd_config_path }}"
+    creates: "{{ containerd_config_path }}"
+
+- name: Set SystemdCgroup = true in containerd config
+  ansible.builtin.replace:
+    path: "{{ containerd_config_path }}"
+    regexp: '^(\s*)SystemdCgroup = false\s*$'
+    replace: '\1SystemdCgroup = true'
+  notify: restart containerd
+
+- name: Pin the Kubernetes pause image in containerd config
+  ansible.builtin.replace:
+    path: "{{ containerd_config_path }}"
+    # containerd 2.x location, uses 'sandbox' (not 'sandbox_image').
+    regexp: '^(\s*)sandbox = ''registry\.k8s\.io/pause:[^'']*''\s*$'
+    replace: '\1sandbox = ''{{ containerd_sandbox_image }}'''
+  notify: restart containerd
+
+- name: Ensure containerd service is enabled and started
+  ansible.builtin.systemd:
+    name: containerd
+    enabled: true
+    state: started
+    daemon_reload: true
+
+- name: Verify containerd version
+  ansible.builtin.command:
+    cmd: ctr version
+  register: ctr_version
+  changed_when: false
+
+- name: Show containerd version
+  ansible.builtin.debug:
+    var: ctr_version.stdout_lines
+
+- name: Verify the sandbox image is configured correctly
+  ansible.builtin.shell:
+    cmd: "grep -n 'sandbox =' {{ containerd_config_path }}"
+  register: sandbox_check
+  changed_when: false
+
+- name: Show sandbox image config
+  ansible.builtin.debug:
+    var: sandbox_check.stdout_lines
+
+- name: Fail if the sandbox image is not what we want
+  ansible.builtin.fail:
+    msg: "containerd sandbox image is not {{ containerd_sandbox_image }}"
+  when: containerd_sandbox_image not in sandbox_check.stdout

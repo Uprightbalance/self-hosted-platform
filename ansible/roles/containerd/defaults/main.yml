@@ -1,0 +1,14 @@
+---
+# Names of the .deb files to fetch from the bastion HTTP server.
+# These must match what's in ~/self-hosted-platform-bundle/debs/ on the bastion.
+containerd_deb_file: "containerd_2.2.1-0ubuntu1~22.04.2_amd64.deb"
+runc_deb_file: "runc_1.3.4-0ubuntu1~22.04.1_amd64.deb"
+
+# Where the .deb files land on each node.
+containerd_deb_dir: "{{ node_staging_dir }}/debs"
+
+# The path to containerd's config file.
+containerd_config_path: /etc/containerd/config.toml
+
+# The systemd cgroup driver. Must match kubelet's default (systemd).
+containerd_systemd_cgroup: true

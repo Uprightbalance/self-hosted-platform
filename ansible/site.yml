@@ -16,14 +16,14 @@
   roles:
     - base
 
+- name: containerd on all Kubernetes nodes
+  hosts: k8s
+  become: true
+  tags: [containerd]
+  roles:
+    - containerd
+
 # Placeholder roles, populated in subsequent steps:
-#
-# - name: containerd on all Kubernetes nodes
-#   hosts: k8s
-#   become: true
-#   tags: [containerd]
-#   roles:
-#     - containerd
 #
 # - name: Kubernetes packages on all Kubernetes nodes
 #   hosts: k8s
