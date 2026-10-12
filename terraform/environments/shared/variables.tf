@@ -19,6 +19,6 @@ variable "private_subnet_cidr" {
 }
 
 variable "my_ip" {
-  default = "129.222.206.145"
+  default = "143.105.174.5"
 }
 

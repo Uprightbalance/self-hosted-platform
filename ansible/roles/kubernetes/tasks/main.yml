@@ -5,14 +5,6 @@
 # Offline constraints:
 #   - All .debs come from the bastion; nodes have no internet.
 #   - All container images must be preloaded; kubeadm cannot pull.
-#
-# Order matters:
-#   1. Helpers first (conntrack, socat, ebtables, ipset).
-#   2. Kubernetes CNI (brings /opt/cni/bin).
-#   3. kubeadm, kubelet, kubectl.
-#   4. Hold all packages.
-#   5. Stop kubelet until kubeadm tells it what to do.
-#   6. Preload k8s system images into containerd.
 # =====================================================================
 
 - name: Ensure staging .deb directory exists
@@ -47,12 +39,6 @@
     - "{{ kubelet_deb_file }}"
     - "{{ kubectl_deb_file }}"
 
-# ---------------------------------------------------------------------
-# Install .debs idempotently via the apt module.
-# 'apt: deb=...' knows whether the package is already present at the
-# same version, so re-running reports ok rather than changed.
-# ---------------------------------------------------------------------
-
 - name: Install helper packages from local .deb
   ansible.builtin.apt:
     deb: "{{ node_debs_dir }}/{{ item }}"
@@ -84,11 +70,6 @@
     name: "{{ item }}"
     selection: hold
   loop: "{{ kube_held_packages }}"
-
-# ---------------------------------------------------------------------
-# Ensure kubelet is stopped and disabled, but only change state when
-# it needs changing. This avoids reporting 'changed' on every run.
-# ---------------------------------------------------------------------
 
 - name: Check kubelet service state
   ansible.builtin.command:
