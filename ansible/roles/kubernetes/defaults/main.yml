@@ -10,6 +10,7 @@ kubernetes_cni_deb_file: "kubernetes-cni_1.9.1-1.1_amd64.deb"
 
 # Helper packages required by kubelet at runtime
 helper_deb_files:
+  - "libipset13_7.15-1build1_amd64.deb"
   - "conntrack_1.4.6-2build2_amd64.deb"
   - "socat_1.7.4.1-3ubuntu4_amd64.deb"
   - "ebtables_2.0.11-4build2_amd64.deb"
