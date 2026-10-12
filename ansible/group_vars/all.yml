@@ -5,12 +5,12 @@
 # =====================================================================
 
 # ---------- Node addressing (matches Terraform outputs) ----------
-bastion_public_ip: "18.214.39.1"
-bastion_private_ip: "10.0.1.173"
+bastion_public_ip: "3.238.160.148"
+bastion_private_ip: "10.0.1.75"
 
-control_plane_private_ip: "10.0.2.41"
-worker1_private_ip: "10.0.2.83"
-worker2_private_ip: "10.0.2.238"
+control_plane_private_ip: "10.0.2.36"
+worker1_private_ip: "10.0.2.163"
+worker2_private_ip: "10.0.2.200"
 
 # ---------- Artifact distribution ----------
 # The bastion serves the bundle over HTTP (Pattern C) so each private
